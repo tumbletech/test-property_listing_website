@@ -59,6 +59,7 @@ a{ text-decoration: none; }
 /* ===================== NAVBAR ===================== */
 .tt-navbar{
   background: var(--surface);
+   background-color: #247A3A;
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
@@ -112,6 +113,14 @@ a{ text-decoration: none; }
 .tt-nav-links .nav-link:hover{
   background: var(--primary-tint);
   color: var(--primary-dark);
+}
+
+.tt-navbar .nav-link {
+    color: #FFFFFF;
+}
+
+.tt-navbar .nav-link:hover {
+    color: #2DCB67;
 }
 
 .tt-btn-icon{
