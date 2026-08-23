@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>Ribidu — Agent Login</title>
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  >
+
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet"
+  >
+
+  <style>
+
+    body {
+      min-height: 100vh;
+      background: #f6f8f7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .login-wrapper {
+      width: 100%;
+      max-width: 430px;
+      padding: 20px;
+    }
+
+    .login-card {
+      background: #ffffff;
+      border: 1px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 35px;
+      box-shadow: 0 10px 35px rgba(0, 0, 0, 0.06);
+    }
+
+    .brand {
+      color: #198754;
+      font-size: 2rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .login-icon {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      background: #e9f7ef;
+      color: #198754;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 2rem;
+    }
+
+    .form-control {
+      min-height: 48px;
+    }
+
+    .login-btn {
+      min-height: 48px;
+      font-weight: 600;
+    }
+
+    .demo-note {
+      background: #fff8e1;
+      border: 1px solid #ffe69c;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.85rem;
+    }
+
+  </style>
+
+</head>
+
+<body>
+
+
+<div class="login-wrapper">
+
+  <div class="text-center mb-4">
+
+    <a
+      href="./index.html"
+      class="brand"
+    >
+      Ribidu
+    </a>
+
+    <div class="text-muted mt-1">
+      Agent Portal
+    </div>
+
+  </div>
+
+
+  <div class="login-card">
+
+    <div class="login-icon">
+
+      <i class="bi bi-person-lock"></i>
+
+    </div>
+
+
+    <h2 class="text-center fw-bold mb-2">
+      Agent Login
+    </h2>
+
+    <p class="text-center text-muted mb-4">
+      Sign in to manage your properties and inquiries.
+    </p>
+
+
+    <!-- =====================================================
+         LOGIN FORM
+    ====================================================== -->
+
+    <form id="agentLoginForm">
+
+
+      <div class="mb-3">
+
+        <label
+          for="agentEmail"
+          class="form-label"
+        >
+          Email Address
+        </label>
+
+        <input
+          type="email"
+          class="form-control"
+          id="agentEmail"
+          placeholder="agent@example.com"
+          required
+        >
+
+      </div>
+
+
+      <div class="mb-3">
+
+        <label
+          for="agentPassword"
+          class="form-label"
+        >
+          Password
+        </label>
+
+        <div class="input-group">
+
+          <input
+            type="password"
+            class="form-control"
+            id="agentPassword"
+            placeholder="Enter your password"
+            required
+          >
+
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            id="togglePassword"
+            tabindex="-1"
+          >
+            <i class="bi bi-eye"></i>
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div class="form-check">
+
+          <input
+            class="form-check-input"
+            type="checkbox"
+            id="rememberMe"
+          >
+
+          <label
+            class="form-check-label"
+            for="rememberMe"
+          >
+            Remember me
+          </label>
+
+        </div>
+
+        <a
+          href="#"
+          class="text-success text-decoration-none"
+        >
+          Forgot password?
+        </a>
+
+      </div>
+
+
+      <div
+        id="loginError"
+        class="alert alert-danger d-none"
+        role="alert"
+      >
+        Invalid email or password.
+      </div>
+
+
+      <button
+        type="submit"
+        class="btn btn-success w-100 login-btn"
+      >
+
+        <i class="bi bi-box-arrow-in-right me-1"></i>
+
+        Sign In
+
+      </button>
+
+
+    </form>
+
+
+    <!-- =====================================================
+         DEMO CREDENTIALS
+    ====================================================== -->
+
+    <div class="demo-note mt-4">
+
+      <strong>
+        Demo Login
+      </strong>
+
+      <br>
+
+      Email:
+      <code>agent@ribidu.com</code>
+
+      <br>
+
+      Password:
+      <code>demo123</code>
+
+    </div>
+
+
+  </div>
+
+
+  <div class="text-center mt-4">
+
+    <a
+      href="./index.html"
+      class="text-muted text-decoration-none"
+    >
+
+      <i class="bi bi-arrow-left me-1"></i>
+
+      Back to Ribidu
+
+    </a>
+
+  </div>
+
+</div>
+
+
+<script>
+
+  /* =========================================================
+     PASSWORD VISIBILITY
+  ========================================================= */
+
+  const passwordInput =
+    document.getElementById("agentPassword");
+
+  const togglePassword =
+    document.getElementById("togglePassword");
+
+
+  togglePassword.addEventListener(
+    "click",
+    function() {
+
+      const isPassword =
+        passwordInput.type === "password";
+
+      passwordInput.type =
+        isPassword
+          ? "text"
+          : "password";
+
+      togglePassword.innerHTML =
+        isPassword
+          ? '<i class="bi bi-eye-slash"></i>'
+          : '<i class="bi bi-eye"></i>';
+
+    }
+  );
+
+
+  /* =========================================================
+     DEMO LOGIN
+  ========================================================= */
+
+  const loginForm =
+    document.getElementById("agentLoginForm");
+
+  const loginError =
+    document.getElementById("loginError");
+
+
+  loginForm.addEventListener(
+    "submit",
+    function(e) {
+
+      e.preventDefault();
+
+      const email =
+        document
+          .getElementById("agentEmail")
+          .value
+          .trim()
+          .toLowerCase();
+
+      const password =
+        document
+          .getElementById("agentPassword")
+          .value;
+
+
+      /*
+       * DEMO CREDENTIALS ONLY
+       */
+
+      if (
+        email === "agent@ribidu.com" &&
+        password === "demo123"
+      ) {
+
+        loginError.classList.add(
+          "d-none"
+        );
+
+        /*
+         * Demo session flag.
+         */
+
+        sessionStorage.setItem(
+          "ribiduAgentLoggedIn",
+          "true"
+        );
+
+        window.location.href =
+          "./agent-dashboard.html";
+
+        return;
+
+      }
+
+
+      loginError.classList.remove(
+        "d-none"
+      );
+
+    }
+  );
+
+</script>
+
+
+</body>
+
+</html>
