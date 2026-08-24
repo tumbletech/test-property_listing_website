@@ -46,7 +46,7 @@ function formatArea(area) {
 --------------------------------------------------------------------- */
 
 function getPropertyImages(rowNumber) {
-  const number = cleanValue(rowNumber);
+  const number = String(cleanValue(rowNumber)).padStart(3,"0");
 
   if (!number) return [];
 
@@ -72,7 +72,7 @@ function getPropertyImages(rowNumber) {
 }
 
 function getMainImage(rowNumber) {
-  const number = cleanValue(rowNumber);
+  const number = String(cleanValue(rowNumber)).padStart(3,"0");
 
   if (!number) return "";
 
@@ -497,7 +497,7 @@ function renderCard(property) {
             src="${property.image}"
             alt="${property.title}"
             loading="lazy"
-            onerror="this.src='./assets/img/property-placeholder.jpg';"
+            onerror="this.onerror=null; this.src='./assets/img/property-placeholder.jpg';"
           >
 
           <span class="tt-card-status">
@@ -1654,6 +1654,199 @@ function initEvents() {
 }
 
 /* ---------------------------------------------------------------------
+   PROPERTY CALCULATOR
+--------------------------------------------------------------------- */
+
+function formatCalculatorPeso(amount) {
+
+  return "₱" +
+    Number(amount).toLocaleString(
+      "en-PH",
+      {
+        maximumFractionDigits: 0
+      }
+    );
+
+}
+
+
+function calculateMortgage() {
+
+  const propertyPrice =
+    Number(
+      document.getElementById(
+        "calcPropertyPrice"
+      ).value
+    ) || 0;
+
+
+  const downPayment =
+    Number(
+      document.getElementById(
+        "calcDownPayment"
+      ).value
+    ) || 0;
+
+
+  const annualInterestRate =
+    Number(
+      document.getElementById(
+        "calcInterestRate"
+      ).value
+    ) || 0;
+
+
+  const loanTermYears =
+    Number(
+      document.getElementById(
+        "calcLoanTerm"
+      ).value
+    ) || 0;
+
+
+  const loanAmount =
+    Math.max(
+      propertyPrice - downPayment,
+      0
+    );
+
+
+  const monthlyRate =
+    annualInterestRate /
+    100 /
+    12;
+
+
+  const numberOfPayments =
+    loanTermYears * 12;
+
+
+  let monthlyPayment = 0;
+
+
+  /*
+   * Standard mortgage formula:
+   *
+   * M = P [ r(1+r)^n ] / [ (1+r)^n - 1 ]
+   */
+
+  if (
+    loanAmount > 0 &&
+    numberOfPayments > 0
+  ) {
+
+    if (monthlyRate === 0) {
+
+      monthlyPayment =
+        loanAmount /
+        numberOfPayments;
+
+    } else {
+
+      monthlyPayment =
+        loanAmount *
+        (
+          monthlyRate *
+          Math.pow(
+            1 + monthlyRate,
+            numberOfPayments
+          )
+        ) /
+        (
+          Math.pow(
+            1 + monthlyRate,
+            numberOfPayments
+          ) - 1
+        );
+
+    }
+
+  }
+
+
+  const result =
+    document.getElementById(
+      "mortgageResult"
+    );
+
+
+  const details =
+    document.getElementById(
+      "mortgageDetails"
+    );
+
+
+  if (result) {
+
+    result.textContent =
+      formatCalculatorPeso(
+        monthlyPayment
+      );
+
+  }
+
+
+  if (details) {
+
+    details.textContent =
+      `Loan amount: ${formatCalculatorPeso(
+        loanAmount
+      )}`;
+
+  }
+
+}
+
+
+/* ---------------------------------------------------------------------
+   CALCULATOR EVENTS
+--------------------------------------------------------------------- */
+
+function initCalculator() {
+
+  const calculateButton =
+    document.getElementById(
+      "calculateMortgageBtn"
+    );
+
+
+  if (!calculateButton) {
+    return;
+  }
+
+
+  calculateButton.addEventListener(
+    "click",
+    calculateMortgage
+  );
+
+
+  [
+    "calcPropertyPrice",
+    "calcDownPayment",
+    "calcInterestRate",
+    "calcLoanTerm"
+  ]
+    .forEach(function(id) {
+
+      const input =
+        document.getElementById(id);
+
+      if (!input) return;
+
+      input.addEventListener(
+        "input",
+        calculateMortgage
+      );
+
+    });
+
+
+  calculateMortgage();
+
+}
+
+/* ---------------------------------------------------------------------
    INITIALIZATION
 --------------------------------------------------------------------- */
 
@@ -1663,6 +1856,8 @@ document.addEventListener(
 
     initEvents();
 
+    initCalculator();
+    
     loadProperties();
 
   }
