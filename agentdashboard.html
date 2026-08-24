@@ -337,8 +337,9 @@
         </a>
 
         <a
-          href="#"
-          class="nav-link text-danger"
+           href="#"
+            id="logoutBtn"
+            class="nav-link text-danger"
         >
           <i class="bi bi-box-arrow-right me-2"></i>
           Logout
@@ -1507,16 +1508,6 @@
 
 <script>
 
-    /* -----------------------------------------------------------
-     LOGIN
-    ----------------------------------------------------------- */
-
-    const agentLoggedIn =
-        sessionStorage.getItem("ribiduAgentLoggedIn");
-
-        if (agentLoggedIn !== "true") {
-        window.location.href = "./agent-login.html";
-        }
 
   /* -----------------------------------------------------------
      PHOTO PREVIEW
@@ -1604,6 +1595,8 @@
   }
 
 </script>
+
+<script src="./js/agentdashboard.js"></script>
 
 <script>
 
