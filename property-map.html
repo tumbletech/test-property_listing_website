@@ -30,6 +30,12 @@
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
   >
 
+  <!-- Leaflet Draw -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css"
+  >
+
 
   <!-- Ribidu Styles -->
   <link
@@ -118,6 +124,35 @@
       margin-top: 15px;
       color: #6c757d;
       font-size: 0.85rem;
+    }
+
+    .pin-status {
+      min-height: 1.5rem;
+      font-size: 0.875rem;
+    }
+
+    .draft-toolbar-button {
+      background: #ffffff;
+      color: #198754;
+      border: 2px solid rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 700;
+      height: 34px;
+      line-height: 30px;
+      text-align: center;
+      width: 34px;
+    }
+
+    .draft-toolbar-button.is-active {
+      background: #198754;
+      color: #ffffff;
+    }
+
+    .draft-toolbar-button + .draft-toolbar-button {
+      border-top: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 0;
     }
 
     @media (max-width: 768px) {
@@ -408,6 +443,56 @@
         </div>
 
 
+        <!-- MANUAL PROPERTY PIN -->
+
+        <div class="col-md-12 col-lg-3">
+
+          <label class="form-label fw-semibold">
+            Property Location
+          </label>
+
+          <div class="d-flex gap-2">
+
+            <button
+              id="dropPinBtn"
+              class="btn btn-outline-success flex-grow-1"
+              type="button"
+              aria-pressed="false"
+            >
+              <i class="bi bi-pin-map me-1"></i>
+              Drop a Pin
+            </button>
+
+            <button
+              id="clearPinBtn"
+              class="btn btn-light border"
+              type="button"
+              disabled
+            >
+              Clear
+            </button>
+
+          </div>
+
+          <div
+            id="pinStatus"
+            class="pin-status text-muted mt-2"
+            aria-live="polite"
+          >
+            Select “Drop a Pin,” then click the map.
+          </div>
+
+          <div
+            id="draftStatus"
+            class="pin-status text-muted"
+            aria-live="polite"
+          >
+            Use the map toolbar to draft lines and shapes. The curved-line tool uses three map clicks: start, bend, end.
+          </div>
+
+        </div>
+
+
       </div>
 
     </div>
@@ -453,6 +538,10 @@
   src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
 ></script>
 
+<script
+  src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"
+></script>
+
 
 <!-- =========================================================
      MAP JAVASCRIPT
@@ -466,6 +555,8 @@
 
   let properties = [];
   let markers = [];
+  let manualPin = null;
+  let isPlacingPin = false;
 
 
 
@@ -492,6 +583,563 @@
         '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
     }
   ).addTo(map);
+
+
+  /* ---------------------------------------------------------
+     MAP DRAFTING
+  --------------------------------------------------------- */
+
+  const draftedItems = new L.FeatureGroup();
+  const curveGuide = new L.FeatureGroup();
+  const curvePoints = [];
+  let isDrawingCurve = false;
+  let curveButton = null;
+
+  map.addLayer(draftedItems);
+  map.addLayer(curveGuide);
+
+  map.addControl(
+    new L.Control.Draw({
+      position: "topleft",
+      draw: {
+        polyline: {
+          shapeOptions: { color: "#198754", weight: 4 }
+        },
+        polygon: {
+          allowIntersection: false,
+          shapeOptions: { color: "#198754", fillOpacity: 0.16 }
+        },
+        rectangle: {
+          shapeOptions: { color: "#198754", fillOpacity: 0.16 }
+        },
+        circle: {
+          shapeOptions: { color: "#198754", fillOpacity: 0.16 }
+        },
+        marker: false,
+        circlemarker: false
+      },
+      edit: {
+        featureGroup: draftedItems,
+        edit: true,
+        remove: true
+      }
+    })
+  );
+
+  map.on(L.Draw.Event.CREATED, function(event) {
+    draftedItems.addLayer(event.layer);
+  });
+
+
+  function setDraftStatus(message, style) {
+
+    const status = document.getElementById("draftStatus");
+
+    status.textContent = message;
+    status.className = "pin-status " + style;
+
+  }
+
+
+  function refreshCurveGuide() {
+
+    curveGuide.clearLayers();
+
+    curvePoints.forEach(function(point) {
+      L.circleMarker(point, {
+        color: "#198754",
+        fillColor: "#ffffff",
+        fillOpacity: 1,
+        radius: 6,
+        weight: 3
+      }).addTo(curveGuide);
+    });
+
+    if (curvePoints.length > 1) {
+      L.polyline(curvePoints, {
+        color: "#198754",
+        dashArray: "6 6",
+        weight: 2
+      }).addTo(curveGuide);
+    }
+
+  }
+
+
+  function stopCurveDrawing(message) {
+
+    isDrawingCurve = false;
+    curvePoints.length = 0;
+    curveGuide.clearLayers();
+
+    if (curveButton) {
+      curveButton.classList.remove("is-active");
+      curveButton.setAttribute("aria-pressed", "false");
+      curveButton.title = "Draw a curved line";
+    }
+
+    if (message) {
+      setDraftStatus(message, "text-muted");
+    }
+
+  }
+
+
+  function addQuadraticCurve(start, control, end) {
+
+    const points = [];
+
+    for (let step = 0; step <= 40; step++) {
+      const progress = step / 40;
+      const inverse = 1 - progress;
+
+      points.push([
+        inverse * inverse * start.lat + 2 * inverse * progress * control.lat + progress * progress * end.lat,
+        inverse * inverse * start.lng + 2 * inverse * progress * control.lng + progress * progress * end.lng
+      ]);
+    }
+
+    draftedItems.addLayer(
+      L.polyline(points, {
+        color: "#198754",
+        weight: 4,
+        lineCap: "round"
+      }).bindPopup("Draft curved line")
+    );
+
+  }
+
+
+  const CurveControl = L.Control.extend({
+    options: { position: "topleft" },
+
+    onAdd: function() {
+      const container = L.DomUtil.create("div", "leaflet-bar");
+      curveButton = L.DomUtil.create("button", "draft-toolbar-button", container);
+      curveButton.type = "button";
+      curveButton.title = "Draw a curved line";
+      curveButton.setAttribute("aria-label", "Draw a curved line");
+      curveButton.setAttribute("aria-pressed", "false");
+      curveButton.innerHTML = "⌒";
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(curveButton, "click", function() {
+        isDrawingCurve = !isDrawingCurve;
+
+        if (isDrawingCurve) {
+          isPlacingPin = false;
+          updatePinControls();
+          stopMeasurement();
+          curvePoints.length = 0;
+          curveGuide.clearLayers();
+          curveButton.classList.add("is-active");
+          curveButton.setAttribute("aria-pressed", "true");
+          curveButton.title = "Cancel curved line";
+          setDraftStatus("Curve mode: click the start point, bend point, then end point.", "text-success");
+        } else {
+          stopCurveDrawing("Curve drawing cancelled.");
+        }
+      });
+
+      return container;
+    }
+  });
+
+  map.addControl(new CurveControl());
+
+
+  /* ---------------------------------------------------------
+     DISTANCE AND AREA MEASUREMENT
+  --------------------------------------------------------- */
+
+  let activeMeasureMode = null;
+  let measureButtonDistance = null;
+  let measureButtonArea = null;
+  const measurePoints = [];
+  const measureGuide = new L.FeatureGroup();
+
+  map.addLayer(measureGuide);
+
+  function formatDistance(meters) {
+
+    return meters >= 1000
+      ? `${(meters / 1000).toFixed(2)} km`
+      : `${Math.round(meters)} m`;
+
+  }
+
+
+  function formatArea(squareMeters) {
+
+    return squareMeters >= 10000
+      ? `${(squareMeters / 10000).toFixed(2)} ha`
+      : `${Math.round(squareMeters).toLocaleString("en-PH")} m²`;
+
+  }
+
+
+  function calculateDistance(start, end) {
+
+    const earthRadius = 6371008.8;
+    const latitudeDelta = (end.lat - start.lat) * Math.PI / 180;
+    const longitudeDelta = (end.lng - start.lng) * Math.PI / 180;
+    const startLatitude = start.lat * Math.PI / 180;
+    const endLatitude = end.lat * Math.PI / 180;
+    const haversine =
+      Math.sin(latitudeDelta / 2) ** 2 +
+      Math.cos(startLatitude) * Math.cos(endLatitude) *
+      Math.sin(longitudeDelta / 2) ** 2;
+
+    return 2 * earthRadius * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine));
+
+  }
+
+
+  function calculateArea(points) {
+
+    const earthRadius = 6371008.8;
+    let sum = 0;
+
+    for (let index = 0; index < points.length; index++) {
+      const current = points[index];
+      const next = points[(index + 1) % points.length];
+      const currentLatitude = current.lat * Math.PI / 180;
+      const nextLatitude = next.lat * Math.PI / 180;
+      const longitudeDelta = (next.lng - current.lng) * Math.PI / 180;
+
+      sum += longitudeDelta * (2 + Math.sin(currentLatitude) + Math.sin(nextLatitude));
+    }
+
+    return Math.abs(sum * earthRadius * earthRadius / 2);
+
+  }
+
+
+  function refreshMeasureGuide() {
+
+    measureGuide.clearLayers();
+
+    if (measurePoints.length === 0) {
+      return;
+    }
+
+    measurePoints.forEach(function(point) {
+      L.circleMarker(point, {
+        color: "#0d6efd",
+        fillColor: "#ffffff",
+        fillOpacity: 1,
+        radius: 5,
+        weight: 3
+      }).addTo(measureGuide);
+    });
+
+    if (measurePoints.length > 1) {
+      const guide = activeMeasureMode === "area"
+        ? L.polygon(measurePoints, { color: "#0d6efd", dashArray: "5 5", fillOpacity: 0.08 })
+        : L.polyline(measurePoints, { color: "#0d6efd", dashArray: "5 5", weight: 3 });
+
+      guide.addTo(measureGuide);
+    }
+
+  }
+
+
+  function updateMeasurementButtons() {
+
+    if (!measureButtonDistance || !measureButtonArea) {
+      return;
+    }
+
+    measureButtonDistance.classList.toggle("is-active", activeMeasureMode === "distance");
+    measureButtonArea.classList.toggle("is-active", activeMeasureMode === "area");
+    measureButtonDistance.setAttribute("aria-pressed", String(activeMeasureMode === "distance"));
+    measureButtonArea.setAttribute("aria-pressed", String(activeMeasureMode === "area"));
+    measureButtonArea.title = activeMeasureMode === "area" && measurePoints.length >= 3
+      ? "Finish area measurement"
+      : "Measure an area";
+
+  }
+
+
+  function stopMeasurement(message) {
+
+    activeMeasureMode = null;
+    measurePoints.length = 0;
+    measureGuide.clearLayers();
+    updateMeasurementButtons();
+
+    if (message) {
+      setDraftStatus(message, "text-muted");
+    }
+
+  }
+
+
+  function addDistanceMeasurement(points) {
+
+    const distance = calculateDistance(points[0], points[1]);
+    const line = L.polyline(points, { color: "#0d6efd", dashArray: "8 6", weight: 4 });
+
+    line.bindTooltip(formatDistance(distance), {
+      permanent: true,
+      direction: "center",
+      className: "bg-white border rounded px-1 text-primary fw-semibold"
+    });
+    draftedItems.addLayer(line);
+
+  }
+
+
+  function addAreaMeasurement(points) {
+
+    const area = calculateArea(points);
+    const polygon = L.polygon(points, {
+      color: "#0d6efd",
+      fillColor: "#0d6efd",
+      fillOpacity: 0.12,
+      weight: 3
+    });
+
+    polygon.bindTooltip(formatArea(area), {
+      permanent: true,
+      direction: "center",
+      className: "bg-white border rounded px-1 text-primary fw-semibold"
+    });
+    draftedItems.addLayer(polygon);
+
+  }
+
+
+  function beginMeasurement(mode) {
+
+    if (activeMeasureMode === mode) {
+      if (mode === "area" && measurePoints.length >= 3) {
+        addAreaMeasurement(measurePoints);
+        stopMeasurement("Area measurement added. Use the eraser in the map toolbar to remove it.");
+      } else {
+        stopMeasurement("Measurement cancelled.");
+      }
+
+      return;
+    }
+
+    isPlacingPin = false;
+    updatePinControls();
+    stopCurveDrawing();
+    activeMeasureMode = mode;
+    measurePoints.length = 0;
+    measureGuide.clearLayers();
+    updateMeasurementButtons();
+    setDraftStatus(
+      mode === "distance"
+        ? "Distance mode: click the start point, then the end point."
+        : "Area mode: click each boundary corner, then click the area button again to finish.",
+      "text-primary"
+    );
+
+  }
+
+
+  const MeasurementControl = L.Control.extend({
+    options: { position: "topleft" },
+
+    onAdd: function() {
+      const container = L.DomUtil.create("div", "leaflet-bar");
+      measureButtonDistance = L.DomUtil.create("button", "draft-toolbar-button", container);
+      measureButtonDistance.type = "button";
+      measureButtonDistance.title = "Measure a distance";
+      measureButtonDistance.setAttribute("aria-label", "Measure a distance");
+      measureButtonDistance.setAttribute("aria-pressed", "false");
+      measureButtonDistance.innerHTML = "↔";
+
+      measureButtonArea = L.DomUtil.create("button", "draft-toolbar-button", container);
+      measureButtonArea.type = "button";
+      measureButtonArea.title = "Measure an area";
+      measureButtonArea.setAttribute("aria-label", "Measure an area");
+      measureButtonArea.setAttribute("aria-pressed", "false");
+      measureButtonArea.innerHTML = "△";
+
+      L.DomEvent.disableClickPropagation(container);
+      L.DomEvent.on(measureButtonDistance, "click", function() {
+        beginMeasurement("distance");
+      });
+      L.DomEvent.on(measureButtonArea, "click", function() {
+        beginMeasurement("area");
+      });
+
+      return container;
+    }
+  });
+
+  map.addControl(new MeasurementControl());
+
+  map.on("click", function(event) {
+
+    if (!activeMeasureMode) {
+      return;
+    }
+
+    measurePoints.push(event.latlng);
+    refreshMeasureGuide();
+
+    if (activeMeasureMode === "distance" && measurePoints.length === 2) {
+      addDistanceMeasurement(measurePoints);
+      stopMeasurement("Distance measurement added. Use the eraser in the map toolbar to remove it.");
+    } else if (activeMeasureMode === "area") {
+      setDraftStatus(
+        measurePoints.length < 3
+          ? `Area mode: add ${3 - measurePoints.length} more point${measurePoints.length === 2 ? "" : "s"}.`
+          : "Area mode: add another corner or click the area button again to finish.",
+        "text-primary"
+      );
+    } else {
+      setDraftStatus("Distance mode: click the end point.", "text-primary");
+    }
+
+  });
+
+  map.on("click", function(event) {
+
+    if (!isDrawingCurve) {
+      return;
+    }
+
+    curvePoints.push(event.latlng);
+    refreshCurveGuide();
+
+    if (curvePoints.length === 3) {
+      addQuadraticCurve(curvePoints[0], curvePoints[1], curvePoints[2]);
+      stopCurveDrawing("Curved line added. Use the eraser in the map toolbar to remove a draft.");
+    } else {
+      const next = curvePoints.length === 1 ? "bend" : "end";
+      setDraftStatus(`Curve mode: click the ${next} point.`, "text-success");
+    }
+
+  });
+
+
+  /* ---------------------------------------------------------
+     MANUAL PROPERTY PIN
+  --------------------------------------------------------- */
+
+  function setPinStatus(message, style) {
+
+    const status = document.getElementById("pinStatus");
+
+    status.textContent = message;
+    status.className = "pin-status mt-2 " + style;
+
+  }
+
+
+  function updatePinControls() {
+
+    const dropPinBtn = document.getElementById("dropPinBtn");
+    const clearPinBtn = document.getElementById("clearPinBtn");
+
+    dropPinBtn.classList.toggle("btn-success", isPlacingPin);
+    dropPinBtn.classList.toggle("btn-outline-success", !isPlacingPin);
+    dropPinBtn.setAttribute("aria-pressed", String(isPlacingPin));
+    dropPinBtn.innerHTML = isPlacingPin
+      ? '<i class="bi bi-crosshair me-1"></i>Click the Map'
+      : '<i class="bi bi-pin-map me-1"></i>Drop a Pin';
+    clearPinBtn.disabled = !manualPin;
+
+  }
+
+
+  function updateManualPinPopup(latlng) {
+
+    manualPin.bindPopup(`
+      <div class="property-popup">
+        <div class="property-popup-title">Selected Property Location</div>
+        <div class="property-popup-location">
+          <i class="bi bi-geo-alt"></i>
+          ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}
+        </div>
+        <div class="small text-muted">Indicative location only. Confirm the exact boundary separately.</div>
+      </div>
+    `);
+
+  }
+
+
+  function placeManualPin(latlng) {
+
+    if (manualPin) {
+      manualPin.setLatLng(latlng);
+    } else {
+      manualPin = L.marker(latlng, {
+        draggable: true,
+        title: "Your selected property location"
+      }).addTo(map);
+
+      manualPin.on("dragend", function() {
+        const position = manualPin.getLatLng();
+        updateManualPinPopup(position);
+        setPinStatus(
+          `Pinned at ${position.lat.toFixed(6)}, ${position.lng.toFixed(6)}. You can drag the pin to refine it.`,
+          "text-success"
+        );
+      });
+    }
+
+    updateManualPinPopup(latlng);
+    isPlacingPin = false;
+    updatePinControls();
+    setPinStatus(
+      `Pinned at ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}. You can drag the pin to refine it.`,
+      "text-success"
+    );
+    manualPin.openPopup();
+
+  }
+
+
+  document.getElementById("dropPinBtn").addEventListener("click", function() {
+
+    isPlacingPin = !isPlacingPin;
+
+    if (isPlacingPin && isDrawingCurve) {
+      stopCurveDrawing();
+    }
+
+    if (isPlacingPin && activeMeasureMode) {
+      stopMeasurement();
+    }
+
+    updatePinControls();
+    setPinStatus(
+      isPlacingPin
+        ? "Click the map where the property is located."
+        : "Select “Drop a Pin,” then click the map.",
+      "text-muted"
+    );
+
+  });
+
+
+  document.getElementById("clearPinBtn").addEventListener("click", function() {
+
+    if (manualPin) {
+      map.removeLayer(manualPin);
+      manualPin = null;
+    }
+
+    isPlacingPin = false;
+    updatePinControls();
+    setPinStatus("Select “Drop a Pin,” then click the map.", "text-muted");
+
+  });
+
+
+  map.on("click", function(event) {
+
+    if (isPlacingPin) {
+      placeManualPin(event.latlng);
+    }
+
+  });
 
 
   /* ---------------------------------------------------------
@@ -995,13 +1643,6 @@ function parseCSV(csvText) {
         );
 
 }
-
-
-/* ---------------------------------------------------------
-   LOAD RIBIDU PROPERTY DATABASE
---------------------------------------------------------- */
-
-loadPropertiesFromCSV();
 
 
 /* ---------------------------------------------------------
