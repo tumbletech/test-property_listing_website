@@ -32,6 +32,7 @@
           <div class="collapse navbar-collapse" id="ttNav">
             <ul class="navbar-nav mx-lg-auto tt-nav-links">
               <li class="nav-item"><a class="nav-link" href="#listings">Properties</a></li>
+              <li class="nav-item"><a class="nav-link" href="./property-map.html"><i class="bi bi-map me-1"></i>Map View</a></li>
               <li class="nav-item"><a class="nav-link" href="#listings" data-quick-filter="For Sale">For Sale</a></li>
               <li class="nav-item"><a class="nav-link" href="#listings" data-quick-filter="For Rent">For Rent</a></li>
               <li class="nav-item"><a class="nav-link" href="#agents">Agents</a></li>
@@ -610,15 +611,454 @@
 
     </div>
 
+    <!-- =========================================================
+     RIBIDU PROPERTY PLANNER MODAL
+    ========================================================= -->
+
+    <div
+      class="modal fade"
+      id="propertyPlannerModal"
+      tabindex="-1"
+      aria-labelledby="propertyPlannerModalLabel"
+      aria-hidden="true"
+    >
+
+      <div class="modal-dialog modal-lg modal-dialog-centered">
+
+        <div class="modal-content">
+
+          <!-- HEADER -->
+          <div class="modal-header">
+
+            <div>
+
+              <h5
+                class="modal-title"
+                id="propertyPlannerModalLabel"
+              >
+                <i class="bi bi-rulers me-2"></i>
+                Ribidu Property Planner
+              </h5>
+
+              <small class="text-muted">
+                Estimate the cost of developing this property
+              </small>
+
+            </div>
+
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+
+          </div>
+
+
+          <!-- BODY -->
+          <div class="modal-body">
+
+            <!-- SELECTED PROPERTY -->
+            <div
+              class="border rounded p-3 mb-4 bg-light"
+              id="plannerPropertySummary"
+            >
+
+              <div class="fw-semibold">
+                Selected Property
+              </div>
+
+              <div
+                class="small text-muted"
+                id="plannerPropertyTitle"
+              >
+                —
+              </div>
+
+              <div
+                class="small text-muted"
+                id="plannerPropertyLocation"
+              >
+                —
+              </div>
+
+              <div
+                class="fw-semibold mt-2"
+                id="plannerPropertyPrice"
+              >
+                —
+              </div>
+
+            </div>
+
+
+            <!-- DEVELOPMENT TYPE -->
+            <div class="mb-4">
+
+              <label
+                for="plannerDevelopmentType"
+                class="form-label fw-semibold"
+              >
+                What do you want to do with the property?
+              </label>
+
+              <select
+                class="form-select"
+                id="plannerDevelopmentType"
+              >
+
+                <option value="">
+                  Select an option
+                </option>
+
+                <option value="new-house">
+                  Build a new house
+                </option>
+
+                <option value="renovation">
+                  Renovate an existing house
+                </option>
+
+                <option value="land-development">
+                  Develop vacant land
+                </option>
+
+                <option value="commercial">
+                  Develop a commercial property
+                </option>
+
+              </select>
+
+            </div>
+
+
+            <!-- DYNAMIC PLANNER INPUTS -->
+            <div
+              id="plannerInputs"
+              class="d-none"
+            >
+
+              <!-- FLOOR AREA -->
+              <div
+                class="mb-3"
+                id="plannerFloorAreaGroup"
+              >
+
+                <label
+                  for="plannerFloorArea"
+                  class="form-label"
+                >
+                  Estimated floor area
+                </label>
+
+                <div class="input-group">
+
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="plannerFloorArea"
+                    min="1"
+                    step="0.01"
+                    placeholder="e.g. 120"
+                  >
+
+                  <span class="input-group-text">
+                    sqm
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <!-- LAND AREA -->
+              <div
+                class="mb-3"
+                id="plannerLandAreaGroup"
+              >
+
+                <label
+                  for="plannerLandArea"
+                  class="form-label"
+                >
+                  Land area
+                </label>
+
+                <div class="input-group">
+
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="plannerLandArea"
+                    min="1"
+                    step="0.01"
+                    placeholder="e.g. 500"
+                  >
+
+                  <span class="input-group-text">
+                    sqm
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <!-- ROAD DEVELOPMENT -->
+              <div
+                class="mb-3"
+                id="plannerRoadGroup"
+              >
+
+                <label
+                  for="plannerRoadArea"
+                  class="form-label"
+                >
+                  Road / access development area
+                </label>
+
+                <div class="input-group">
+
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="plannerRoadArea"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 200"
+                  >
+
+                  <span class="input-group-text">
+                    sqm
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <!-- FENCE -->
+              <div
+                class="mb-3"
+                id="plannerFenceGroup"
+              >
+
+                <label
+                  for="plannerFenceLength"
+                  class="form-label"
+                >
+                  Estimated fence length
+                </label>
+
+                <div class="input-group">
+
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="plannerFenceLength"
+                    min="0"
+                    step="0.01"
+                    placeholder="e.g. 100"
+                  >
+
+                  <span class="input-group-text">
+                    linear m
+                  </span>
+
+                </div>
+
+              </div>
+
+
+              <!-- QUALITY LEVEL -->
+              <div class="mb-4">
+
+                <label
+                  for="plannerQuality"
+                  class="form-label fw-semibold"
+                >
+                  Development level
+                </label>
+
+                <select
+                  class="form-select"
+                  id="plannerQuality"
+                >
+
+                  <option value="basic">
+                    Basic / Economy
+                  </option>
+
+                  <option value="standard" selected>
+                    Standard
+                  </option>
+
+                  <option value="premium">
+                    Premium
+                  </option>
+
+                </select>
+
+              </div>
+
+
+              <!-- CALCULATE -->
+              <button
+                type="button"
+                class="btn tt-btn-accent w-100"
+                id="calculatePlannerBtn"
+              >
+
+                <i class="bi bi-calculator me-2"></i>
+                Calculate Estimated Development Cost
+
+              </button>
+
+            </div>
+
+
+            <!-- RESULTS -->
+            <div
+              id="plannerResults"
+              class="d-none mt-4"
+            >
+
+              <hr>
+
+              <h6 class="fw-semibold mb-3">
+                Estimated Development Cost
+              </h6>
+
+
+              <div class="row g-3">
+
+                <div class="col-12 col-md-6">
+
+                  <div class="border rounded p-3 h-100">
+
+                    <small class="text-muted d-block">
+                      Estimated Development Cost
+                    </small>
+
+                    <strong
+                      class="fs-4"
+                      id="plannerDevelopmentCost"
+                    >
+                      ₱0
+                    </strong>
+
+                  </div>
+
+                </div>
+
+
+                <div class="col-12 col-md-6">
+
+                  <div class="border rounded p-3 h-100">
+
+                    <small class="text-muted d-block">
+                      Property Price
+                    </small>
+
+                    <strong
+                      class="fs-4"
+                      id="plannerPropertyCost"
+                    >
+                      ₱0
+                    </strong>
+
+                  </div>
+
+                </div>
+
+
+                <div class="col-12">
+
+                  <div class="border rounded p-3">
+
+                    <small class="text-muted d-block">
+                      Estimated Total Investment
+                    </small>
+
+                    <strong
+                      class="fs-3"
+                      id="plannerTotalCost"
+                    >
+                      ₱0
+                    </strong>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+
+              <!-- DISCLAIMER -->
+              <div class="alert alert-warning mt-4 mb-0">
+
+                <div class="d-flex gap-2">
+
+                  <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+
+                  <div>
+
+                    <strong>
+                      Important:
+                    </strong>
+
+                    <p class="mb-0 small mt-1">
+
+                      RPP is only for estimation purposes.
+                      It is intended to give a buyer a ballpark
+                      figure as to how much it may cost to develop
+                      a chosen property.
+
+                      Ribidu highly recommends that the buyer
+                      consult a professional engineer and/or builder
+                      to verify and confirm the estimated cost
+                      produced by RPP.
+
+                    </p>
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
+
+          </div>
+
+
+          <!-- FOOTER -->
+          <div class="modal-footer">
+
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              data-bs-dismiss="modal"
+            >
+              Close
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
     <!-- Bootstrap Bundle JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.5.4/papaparse.min.js"></script>
     
 
-    <script src="./js/script.js"></script>
-
     <script src="js/app.js"></script>
 
-    </body>
+  </body>
 </html>
